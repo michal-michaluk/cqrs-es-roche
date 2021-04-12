@@ -11,6 +11,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.support.TransactionSynchronizationAdapter;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -50,6 +52,12 @@ public class EventOutbox {
             );
             if (enabled) {
                 outboxRepository.save(message);
+                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronizationAdapter() {
+                    @Override
+                    public void afterCommit() {
+                        send(message);
+                    }
+                });
             } else {
                 PreparedMessage prepared = prepare(message);
                 kafka.send(prepared.getTopic(), prepared.getKey(), prepared.getPayload());
@@ -66,14 +74,18 @@ public class EventOutbox {
 
     private void send(Page<OutboxMessage> messages) {
         for (OutboxMessage message : messages) {
-            PreparedMessage prepared = prepare(message);
-            kafka.send(prepared.getTopic(), prepared.getKey(), prepared.getPayload())
-                    .addCallback(
-                            success -> outboxRepository.deleteByIdInSeparateTransaction(message.getEventId()),
-                            exception -> log.error("Could not send outbox message topic: {}, eventId: {}, payload: {}",
-                                    prepared.getTopic(), message.getEventId(), prepared.getPayload(), exception)
-                    );
+            send(message);
         }
+    }
+
+    private void send(OutboxMessage message) {
+        PreparedMessage prepared = prepare(message);
+        kafka.send(prepared.getTopic(), prepared.getKey(), prepared.getPayload())
+                .addCallback(
+                        success -> outboxRepository.deleteByIdInSeparateTransaction(message.getEventId()),
+                        exception -> log.error("Could not send outbox message topic: {}, eventId: {}, payload: {}",
+                                prepared.getTopic(), message.getEventId(), prepared.getPayload(), exception)
+                );
     }
 
     private PreparedMessage prepare(OutboxMessage message) {
