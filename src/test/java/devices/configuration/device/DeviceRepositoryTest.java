@@ -1,7 +1,7 @@
 package devices.configuration.device;
 
 import devices.configuration.IntegrationTest;
-import devices.configuration.JsonAssert;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,7 +47,8 @@ class DeviceRepositoryTest {
         var result = transactional(() -> repository.get(deviceId));
 
         // then
-        JsonAssert.assertThat(result).hasFieldsLike(device);
+        Assertions.assertThat(result.map(Device::toSnapshot))
+                .hasValue(device.toSnapshot());
     }
 
 }

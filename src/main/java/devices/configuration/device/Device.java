@@ -48,25 +48,8 @@ public class Device {
         }
     }
 
-    public Violations getViolations() {
-        return Violations.builder()
-                .operatorNotAssigned(ownership == null || ownership.getOperator() == null)
-                .providerNotAssigned(ownership == null || ownership.getProvider() == null)
-                .locationMissing(location == null)
-                .showOnMapButMissingLocation(settings.isShowOnMap() && location == null)
-                .showOnMapButNoPublicAccess(settings.isShowOnMap() && !settings.isPublicAccess())
-                .build();
-    }
-
-    public Visibility getVisibility() {
-        return Visibility.of(
-                getViolations().isValid(),
-                settings.isPublicAccess(),
-                settings.isShowOnMap());
-    }
-
     public DeviceSnapshot toSnapshot() {
-        Violations violations = getViolations();
+        Violations violations = checkViolations();
         Visibility visibility = Visibility.of(
                 violations.isValid(),
                 settings.isPublicAccess(),
@@ -81,5 +64,15 @@ public class Device {
                 violations,
                 visibility
         );
+    }
+
+    private Violations checkViolations() {
+        return Violations.builder()
+                .operatorNotAssigned(ownership == null || ownership.getOperator() == null)
+                .providerNotAssigned(ownership == null || ownership.getProvider() == null)
+                .locationMissing(location == null)
+                .showOnMapButMissingLocation(settings.isShowOnMap() && location == null)
+                .showOnMapButNoPublicAccess(settings.isShowOnMap() && !settings.isPublicAccess())
+                .build();
     }
 }

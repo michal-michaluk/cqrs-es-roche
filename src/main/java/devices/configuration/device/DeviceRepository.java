@@ -7,6 +7,7 @@ import devices.configuration.device.events.OpeningHoursUpdated;
 import devices.configuration.device.events.OwnershipUpdated;
 import devices.configuration.device.events.SettingsUpdated;
 import lombok.AllArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -19,6 +20,7 @@ import java.util.stream.Collectors;
 public class DeviceRepository {
 
     private final DeviceEventRepository repository;
+    private final ApplicationEventPublisher publisher;
 
     Optional<Device> get(String deviceId) {
         List<DomainEvent> events = repository.findByDeviceId(deviceId).stream()
@@ -41,7 +43,10 @@ public class DeviceRepository {
     void save(Device device) {
         device.events.forEach(event -> {
             repository.save(new DeviceEventEntity(device.deviceId, event));
+            publisher.publishEvent(event);
         });
+        if (!device.events.isEmpty()) {
+            publisher.publishEvent(device.toSnapshot());
+        }
     }
-
 }
