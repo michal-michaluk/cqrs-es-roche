@@ -1,7 +1,7 @@
 package devices.configuration.device.events;
 
 import devices.configuration.DomainEvent;
-import devices.configuration.device.LegacyDomainEvent;
+import devices.configuration.LegacyDomainEvent;
 import devices.configuration.device.Ownership;
 import lombok.Value;
 

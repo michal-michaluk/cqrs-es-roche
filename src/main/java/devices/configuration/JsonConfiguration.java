@@ -3,10 +3,10 @@ package devices.configuration;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.introspect.AnnotatedClass;
+import com.fasterxml.jackson.databind.introspect.AnnotatedClassResolver;
+import com.fasterxml.jackson.databind.jsontype.NamedType;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
@@ -14,6 +14,10 @@ import com.vladmihalcea.hibernate.type.util.ObjectMapperSupplier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+
+import javax.annotation.PostConstruct;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.ANY;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
@@ -53,4 +57,18 @@ public class JsonConfiguration implements ObjectMapperSupplier {
         return OBJECT_MAPPER;
     }
 
+    @PostConstruct
+    void initEventTypes() {
+        DeserializationConfig config = OBJECT_MAPPER.getDeserializationConfig();
+        AnnotationIntrospector ai = config.getAnnotationIntrospector();
+        AnnotatedClass ac = AnnotatedClassResolver.resolve(config, OBJECT_MAPPER.constructType(DomainEvent.class), config);
+        List<NamedType> subtypes = ai.findSubtypes(ac);
+
+        EventTypes.init(subtypes.stream()
+                .collect(Collectors.toMap(
+                        NamedType::getType,
+                        type -> EventTypes.Type.of(type.getName())
+                ))
+        );
+    }
 }
