@@ -1,6 +1,4 @@
-package devices.configuration.device;
-
-import devices.configuration.DomainEvent;
+package devices.configuration;
 
 public interface LegacyDomainEvent {
 

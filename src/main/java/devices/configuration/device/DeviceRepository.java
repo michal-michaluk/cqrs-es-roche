@@ -2,6 +2,7 @@ package devices.configuration.device;
 
 import devices.configuration.DomainEvent;
 import devices.configuration.LastEvents;
+import devices.configuration.LegacyDomainEvent;
 import devices.configuration.device.events.LocationUpdated;
 import devices.configuration.device.events.OpeningHoursUpdated;
 import devices.configuration.device.events.OwnershipUpdated;
